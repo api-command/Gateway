@@ -1,0 +1,64 @@
+
+---
+
+### 🛡️ `.gitignore` (Rust + Go + Docker + CI + Editor safe)
+
+```gitignore
+# Build / Binaries
+/target/
+/bin/
+/build/
+*.exe
+*.o
+*.so
+*.dll
+*.out
+
+# Rust
+Cargo.lock
+
+# Go
+go.sum
+*.test
+
+# Logs
+*.log
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.*
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Node (if any UI tool)
+node_modules/
+
+# Docker
+*.tar
+*.img
+*.pid
+
+# Test Output
+coverage/
+*.lcov
+
+# CI Artifacts
+/.coverage
+/test-results/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.crash
+
+# Kubernetes
+*.yaml~

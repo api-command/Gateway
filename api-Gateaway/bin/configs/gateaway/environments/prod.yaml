@@ -1,0 +1,45 @@
+# Staging Environment Settings
+# ----------------------------------
+env: staging
+log_level: info
+
+services:
+  redis:
+    host: "redis-staging.cluster.example.com"
+    port: 6379
+    password: "${REDIS_PASSWORD}"  # From env vars
+    tls: true
+
+rate_limiting:
+  enabled: true
+  redis_key_prefix: "staging_gateway:"
+  strict_mode: false  # Allow some overflow
+
+auth:
+  jwt:
+    secret: "${JWT_SECRET}"
+    issuer: "api-gateway-staging"
+    leeway: 30
+  oauth:
+    enabled: true
+    provider_url: "https://auth-staging.example.com"
+    client_id: "${OAUTH_CLIENT_ID}"
+    client_secret: "${OAUTH_CLIENT_SECRET}"
+
+caching:
+  enabled: true
+  ttl: 5m
+  redis:
+    max_connections: 50
+
+backends:
+  user_service: "http://user-service.staging.svc.cluster.local"
+  product_service: "http://product-service.staging.svc.cluster.local"
+  admin_service: "http://admin-service.staging.svc.cluster.local:8080"
+
+monitoring:
+  prometheus:
+    enabled: true
+    port: 9090
+  sentry:
+    dsn: "${SENTRY_DSN_STAGING}"

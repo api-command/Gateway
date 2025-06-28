@@ -1,0 +1,55 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["Test and Lint"]
+    branches: [main]
+    types:
+      - completed
+
+jobs:
+  deploy-staging:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Docker build
+        run: |
+          docker build -t ${{ vars.REGISTRY }}/api-gateway:${{ github.sha }} .
+          docker push ${{ vars.REGISTRY }}/api-gateway:${{ github.sha }}
+
+      - name: Deploy to Kubernetes
+        uses: azure/k8s-deploy@v4
+        with:
+          namespace: staging
+          manifests: k8s/staging/*
+          images: |
+            ${{ vars.REGISTRY }}/api-gateway:${{ github.sha }}
+
+  deploy-prod:
+    if: github.event.workflow_run.conclusion == 'success'
+    needs: [deploy-staging]
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write # For AWS/GCP auth
+      contents: read
+
+    steps:
+      - name: AWS Login
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ecs-task-definition.json
+          service: api-gateway
+          cluster: prod-cluster
+          wait-for-service-stability: true

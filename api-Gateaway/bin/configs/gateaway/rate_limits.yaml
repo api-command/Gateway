@@ -1,0 +1,53 @@
+# Rate Limiting Policies
+# Format: policy_name → rules
+
+policies:
+  # Global per-IP limits
+  user_global:
+    type: ip
+    limit: 100
+    window: 1m
+    burst: 20
+    algorithm: token_bucket
+    key: "$remote_addr.users"
+
+  user_specific:
+    type: jwt_claim
+    claim: sub
+    limit: 30
+    window: 1m
+    key: "$jwt_claim.sub.users.detail"
+
+  product_listing:
+    type: header
+    header: X-Client-ID
+    limit: 500
+    window: 5m
+    burst: 100
+    key: "$http_x_client_id.products"
+
+  admin_strict:
+    type: composite
+    rules:
+      - type: ip
+        limit: 50
+        window: 1m
+      - type: jwt_claim
+        claim: sub
+        limit: 10
+        window: 30s
+    key: "admin.$remote_addr.$jwt_claim.sub"
+
+# Redis Configuration
+redis:
+  host: ${REDIS_HOST:-redis}
+  port: ${REDIS_PORT:-6379}
+  pool_size: 10
+  timeout: 500ms
+
+# Defaults applied when no policy specified
+defaults:
+  global:
+    limit: 60
+    window: 1m
+    burst: 10

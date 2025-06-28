@@ -1,0 +1,65 @@
+# API Gateway Route Definitions
+# Format: path → backend service with policies
+
+routes:
+  # User Service Routes
+  - path: /users
+    backend: http://user-service:8000
+    methods: [GET, POST, PUT]
+    policies:
+      - rate_limit: user_global
+      - auth: required
+      - caching: 
+          enabled: true
+          ttl: 60s
+    strip_prefix: false
+
+  - path: /users/{id}
+    backend: http://user-service:8000
+    methods: [GET, DELETE, PATCH]
+    policies:
+      - rate_limit: user_specific
+      - auth: required
+      - circuit_breaker:
+          error_threshold: 5%
+          interval: 1m
+
+  # Product Service Routes
+  - path: /products
+    backend: http://product-service:8001
+    methods: [GET]
+    policies:
+      - rate_limit: product_listing
+      - auth: optional
+      - cors:
+          origins: ["*.example.com"]
+          methods: [GET]
+
+  - path: /products/{slug}
+    backend: http://product-service:8001/v2/details
+    methods: [GET]
+    rewrite: 
+      from: /products/(.*)
+      to: /v2/details/$1
+    policies:
+      - cache:
+          key: "product_$1"
+          ttl: 1h
+
+  # Admin Routes
+  - path: /admin/.*
+    backend: http://admin-service:8002
+    methods: [GET, POST, PUT, DELETE]
+    policies:
+      - auth: required
+      - ip_whitelist: ["10.0.0.0/8", "192.168.1.1"]
+      - rate_limit: admin_strict
+
+  # Webhook Endpoint
+  - path: /webhooks/stripe
+    backend: http://payment-service:8003/webhooks
+    methods: [POST]
+    policies:
+      - signature_verification:
+          secret: ${STRIPE_WEBHOOK_SECRET}
+          header: Stripe-Signature

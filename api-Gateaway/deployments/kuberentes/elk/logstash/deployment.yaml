@@ -1,0 +1,71 @@
+# deployments/kubernetes/elk/logstash/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logstash
+  namespace: logging
+  labels:
+    app: logstash
+    component: log-processor
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: logstash
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: logstash
+      annotations:
+        co.elastic.logs/enabled: "false"
+    spec:
+      containers:
+        - name: logstash
+          image: docker.elastic.co/logstash/logstash:8.4.3
+          env:
+            - name: LS_JAVA_OPTS
+              value: "-Xms1g -Xmx1g"
+            - name: ELASTICSEARCH_HOSTS
+              value: "http://elasticsearch.logging.svc.cluster.local:9200"
+          ports:
+            - containerPort: 5044
+              name: beats
+            - containerPort: 5000
+              name: tcp
+            - containerPort: 9600
+              name: monitoring
+          volumeMounts:
+            - name: pipeline
+              mountPath: /usr/share/logstash/pipeline/
+            - name: config
+              mountPath: /usr/share/logstash/config/
+          resources:
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 9600
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 9600
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: pipeline
+          configMap:
+            name: logstash-pipeline
+        - name: config
+          configMap:
+            name: logstash-config

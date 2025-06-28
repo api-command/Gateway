@@ -1,0 +1,37 @@
+# Development Environment Settings
+# ----------------------------------
+env: development
+log_level: debug
+
+services:
+  redis:
+    host: localhost
+    port: 6379
+    password: ""  # No password in dev
+
+rate_limiting:
+  enabled: false  # Disable in dev for easier testing
+  redis_key_prefix: "dev_gateway:"
+
+auth:
+  jwt:
+    secret: "dev-secret-123"  # Insecure - only for local development
+    issuer: "api-gateway-dev"
+    leeway: 60  # seconds
+  oauth:
+    enabled: false
+
+caching:
+  enabled: false
+  ttl: 5s  # Very short cache for development
+
+backends:
+  user_service: "http://localhost:8001"
+  product_service: "http://localhost:8002"
+  admin_service: "http://localhost:8003"
+
+debug:
+  enable_pprof: true  # Go profiling endpoints
+  expose_metrics: true
+  log_requests: true
+  log_responses: true

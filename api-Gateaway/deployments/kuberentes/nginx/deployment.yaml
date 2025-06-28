@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-nginx
+  namespace: api-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gateway-nginx
+  template:
+    metadata:
+      labels:
+        app: gateway-nginx
+    spec:
+      containers:
+      - name: nginxs
+        image: nginx:1.23-alpine
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "250m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-config
